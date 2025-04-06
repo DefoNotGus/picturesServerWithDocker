@@ -1,18 +1,13 @@
-# Use official Python image from DockerHub
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Install dependencies
-COPY backend/requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+COPY app ./app
 
-# Expose the Flask port
+WORKDIR /app/app
 EXPOSE 5000
 
-# Run the database initialization script before starting the app
-CMD ["sh", "-c", "python backend/init_db.py && flask run --host=0.0.0.0"]
+CMD ["python", "app.py"]

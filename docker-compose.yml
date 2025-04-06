@@ -1,38 +1,13 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 10s
-      retries: 5
-      start_period: 20s
-      timeout: 10s
-
-  web:
-    build: .
-    environment:
-      - FLASK_APP=backend/app.py
-      - FLASK_RUN_HOST=0.0.0.0
+  flask-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-image-uploader
     ports:
       - "5000:5000"
-    depends_on:
-      db:
-        condition: service_healthy
     volumes:
-      - ./backend:/app/backend
-      - ./templates:/app/templates
-      - ./uploads:/app/uploads
-    restart: on-failure
-
-volumes:
-  pgdata:
+      - ./app/static/uploads:/app/app/static/uploads
+    restart: unless-stopped
