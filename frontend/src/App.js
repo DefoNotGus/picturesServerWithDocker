@@ -41,10 +41,9 @@ function App() {
         }
     };
 
-    const handleDownload = (e, img) => {
-        e.preventDefault(); // Prevent default behavior of opening the image
+    const handleDownload = (img) => {
         const link = document.createElement('a');
-        link.href = `${API_BASE_URL}/static/uploads/${img}`;
+        link.href = `${API_BASE_URL}/download/${img}`;
         link.setAttribute('download', img);
         document.body.appendChild(link);
         link.click();
@@ -77,16 +76,21 @@ function App() {
             <h2 className="gallery-title">Gallery</h2>
             <div className="gallery-grid">
                 {(showAll ? images : images.slice(0, 1)).map((img, index) => (
-                    <div
-                        className="image-card"
-                        key={index}
-                        onClick={(e) => handleDownload(e, img)} // Pass event to prevent default behavior
-                    >
-                        <img
-                            src={`${API_BASE_URL}/static/uploads/${img}`}
-                            alt={img}
-                            className="image"
-                        />
+                    <div className="image-card" key={index}>
+                        <a
+                            href="#"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDownload(img);
+                            }}
+                            className="download-link"
+                        >
+                            <img
+                                src={`${API_BASE_URL}/static/uploads/${img}`}
+                                alt={img}
+                                className="image"
+                            />
+                        </a>
                     </div>
                 ))}
             </div>
