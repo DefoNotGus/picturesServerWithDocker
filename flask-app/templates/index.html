@@ -3,40 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Gallery</title>
-    <!-- Bootstrap CSS -->
+    <title>Pinnacle Backend</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light gray background */
+        }
+        h1, h2 {
+            color: #343a40; /* Dark gray for headings */
+        }
+        .card {
+            border-radius: 10px; /* Rounded corners for cards */
+        }
+        .card img {
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #a71d2a;
+            border-color: #a71d2a;
+        }
+        #imageList li {
+            list-style: none;
+        }
+        #imageList .card {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
     <div class="container py-5">
-        <h1 class="text-center mb-4">Upload Image</h1>
+        <h1 class="text-center mb-4">Upload an Image</h1>
         <div class="card p-4 shadow-sm">
-            <form method="POST" enctype="multipart/form-data" class="d-flex flex-column align-items-center">
+            <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="d-flex flex-column align-items-center">
                 <div class="mb-3 w-100">
-                    <input type="file" name="image" class="form-control">
+                    <input type="file" name="image" class="form-control" accept="image/*" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Upload</button>
             </form>
         </div>
 
-        <h2 class="text-center mt-5">Gallery</h2>
-        <div class="row mt-4">
-            {% for img in images %}
-                <div class="col-md-3 col-sm-6 mb-4">
-                    <div class="card shadow-sm">
-                        <img src="{{ url_for('static', filename='uploads/' + img) }}" alt="{{ img }}" class="card-img-top" style="max-height: 200px; object-fit: cover;">
-                        <div class="card-body text-center">
-                            <button class="btn btn-danger btn-sm" onclick="deleteImage('{{ img }}')">Delete</button>
-                        </div>
+        <h2 class="text-center mt-5">Uploaded Images</h2>
+        <ul id="imageList" class="list-unstyled">
+            {% for image in images %}
+            <li class="mb-4">
+                <div class="card shadow-sm">
+                    <img src="{{ url_for('serve_image', filename=image) }}" alt="{{ image }}" class="card-img-top" style="max-height: 200px; object-fit: cover;">
+                    <div class="card-body text-center">
+                        <p>{{ image }}</p>
+                        <button class="btn btn-danger btn-sm" onclick="deleteImage('{{ image }}')">Delete</button>
                     </div>
                 </div>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
     </div>
 
     <!-- Bootstrap JS (optional, for interactive components) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const form = document.getElementById('uploadForm');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    alert('Image uploaded successfully!');
+                    location.reload(); // Reload the page to show the updated image list
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (err) {
+                alert('An error occurred while uploading the image.');
+            }
+        });
+
         function deleteImage(filename) {
             fetch(`/delete/${filename}`, { method: 'DELETE' })
                 .then(response => {

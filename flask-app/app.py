@@ -16,23 +16,39 @@ def allowed_file(filename):
 @app.route('/upload', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
-        return 'No file part', 400
+        return jsonify({'error': 'No file part'}), 400
     file = request.files['image']
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        return jsonify({'filename': filename}), 201
-    return 'Invalid file type', 400
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Generate a new filename using an index
+    index = len(os.listdir(app.config['UPLOAD_FOLDER'])) + 1
+    extension = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"image_{index}.{extension}"
+    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(save_path)
+
+    # Save filename and timestamp to latest.txt
+    with open('latest.txt', 'a') as f:
+        f.write(f"{filename},{int(os.path.getmtime(save_path))}\n")
+
+    return jsonify({'filename': filename}), 200
 
 @app.route('/static/uploads/<filename>', methods=['GET'])
 def serve_image(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory('static/uploads', filename, as_attachment=True)
+
 @app.route('/images', methods=['GET'])
 def get_images():
     try:
-        images = os.listdir(app.config['UPLOAD_FOLDER'])
+        # Read and sort images by timestamp from latest.txt
+        with open('latest.txt', 'r') as f:
+            lines = f.readlines()
+        images = [line.strip().split(',')[0] for line in sorted(lines, key=lambda x: int(x.split(',')[1]), reverse=True)]
         return jsonify(images), 200
     except FileNotFoundError:
         return jsonify([]), 200  # Return an empty list if the folder doesn't exist
@@ -42,11 +58,27 @@ def home():
     images = os.listdir(app.config['UPLOAD_FOLDER']) if os.path.exists(app.config['UPLOAD_FOLDER']) else []
     return render_template('index.html', images=images)
 
+@app.route('/latest', methods=['GET'])
+def latest_image():
+    try:
+        with open('latest.txt', 'r') as f:
+            latest_filename = f.read().strip()
+        return jsonify({'latest': latest_filename})
+    except FileNotFoundError:
+        return jsonify({'latest': None})
+
 @app.route('/delete/<filename>', methods=['DELETE'])
 def delete_image(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(filepath):
         os.remove(filepath)
+        # Remove the entry from latest.txt
+        with open('latest.txt', 'r') as f:
+            lines = f.readlines()
+        with open('latest.txt', 'w') as f:
+            for line in lines:
+                if not line.startswith(filename + ','):
+                    f.write(line)
         return '', 204
     return 'File not found', 404
 
