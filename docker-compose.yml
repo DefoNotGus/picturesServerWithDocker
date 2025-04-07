@@ -1,13 +1,22 @@
-version: '3.8'
-
 services:
-  flask-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  flask:
+    build: ./flask-app
     container_name: flask-image-uploader
     ports:
       - "5000:5000"
     volumes:
-      - ./app/static/uploads:/app/app/static/uploads
-    restart: unless-stopped
+      - ./flask-app:/app
+    networks:
+      - app-network
+
+  react:
+    build: ./frontend
+    container_name: react-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
